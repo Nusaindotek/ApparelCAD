@@ -1,32 +1,57 @@
-/* Container Utama untuk semua kartu pola */
-.pattern-grid {
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f5f7;
+    margin: 0;
+    padding: 20px;
+}
+
+header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+select {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    cursor: pointer;
+}
+
+#apparel-canvas {
     display: grid;
-    /* Ini rahasianya: otomatis menyesuaikan kolom berdasarkan lebar layar */
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 20px;
-    padding: 20px;
     width: 100%;
     box-sizing: border-box;
 }
 
-/* Container per kartu */
 .pattern-card {
-    background: #ffffff;
+    background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 15px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
+    box-sizing: border-box;
 }
 
-/* Judul setiap pola */
 .pattern-card h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-family: Arial, sans-serif;
+    margin: 0 0 10px 0;
     font-size: 16px;
-    color: #1e293b;
+    color: #0f172a;
     align-self: flex-start;
 }

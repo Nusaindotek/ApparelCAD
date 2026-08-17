@@ -1,6 +1,6 @@
 export class SVGRenderer {
     static render(pattern) {
-        // Cari bounding box (batas min/max koordinat)
+        // 1. Tentukan Bounding Box (Rentang Pola)
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         Object.values(pattern.points).forEach(pt => {
             if (pt.x < minX) minX = pt.x;
@@ -9,71 +9,91 @@ export class SVGRenderer {
             if (pt.y > maxY) maxY = pt.y;
         });
 
-        // Tambahkan margin di sekitar pola agar titik & teks tidak terpotong
-        const margin = 5;
-        const width = (maxX - minX) + (margin * 2);
-        const height = (maxY - minY) + (margin * 2);
+        // Faktor Skala agar SVG Pas di Canvas
+        const scale = 4;
+        const padding = 20;
+        const svgWidth = Math.max((maxX * scale) + (padding * 2), 320);
+        const svgHeight = (maxY * scale) + (padding * 2);
 
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("viewBox", `${minX - margin} ${minY - margin} ${width} ${height}`);
-        svg.setAttribute("width", "340");
-        svg.setAttribute("height", "450");
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("width", "320");
+        svg.setAttribute("height", "420");
+        svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
         svg.style.background = "#ffffff";
         svg.style.border = "1px dashed #cbd5e1";
-        svg.style.borderRadius = "6px";
 
-        // 1. Gambar Path/Garis Pola Utama
-        let pathD = "";
-        pattern.path.forEach((segment, index) => {
-            const start = pattern.points[segment.from];
-            const end = pattern.points[segment.to];
+        const pts = pattern.points;
+        let dPath = "";
 
-            if (index === 0) {
-                pathD += `M ${start.x} ${start.y} `;
-            }
+        // 2. Gambar Path Sesuai Alur Path Engine
+        if (pattern.path && pattern.path.length > 0) {
+            pattern.path.forEach((step, idx) => {
+                const start = pts[step.from];
+                const end = pts[step.to];
 
-            if (segment.type === "line") {
-                pathD += `L ${end.x} ${end.y} `;
-            } else if (segment.type === "curve") {
-                // Kalkulasi Bezier curve sederhana yang mulus untuk kerungan
-                const controlX = (start.x + end.x) / 2;
-                const controlY = Math.max(start.y, end.y);
-                pathD += `Q ${controlX} ${controlY} ${end.x} ${end.y} `;
-            }
-        });
+                const x1 = (start.x * scale) + padding;
+                const y1 = (start.y * scale) + padding;
+                const x2 = (end.x * scale) + padding;
+                const y2 = (end.y * scale) + padding;
 
-        const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        pathEl.setAttribute("d", pathD);
-        pathEl.setAttribute("fill", "rgba(37, 99, 235, 0.05)");
+                if (idx === 0) dPath += `M ${x1} ${y1} `;
+
+                if (step.type === "curve") {
+                    let cx = (x1 + x2) / 2;
+                    let cy = (y1 + y2) / 2;
+
+                    // Penyesuaian kurva spesifik titik
+                    if (step.from === "B" && step.to === "A") { 
+                        cx = x1; cy = y2; 
+                    } else if (step.from === "C" && step.to === "D") { 
+                        cx = x1 - 30; cy = (y1 + y2) / 2; 
+                    } else if (step.from === "A" && step.to === "B" && pattern.part === "Sleeve") { 
+                        cx = (x2 - padding) * 0.4 + padding; cy = y1 - 20; 
+                    }
+
+                    dPath += `Q ${cx} ${cy}, ${x2} ${y2} `;
+                } else {
+                    dPath += `L ${x2} ${y2} `;
+                }
+            });
+            dPath += "Z";
+        }
+
+        // Garis Pola (Stroke)
+        const pathEl = document.createElementNS(svgNS, "path");
+        pathEl.setAttribute("d", dPath);
+        pathEl.setAttribute("fill", "rgba(37, 99, 235, 0.04)");
         pathEl.setAttribute("stroke", "#2563eb");
-        pathEl.setAttribute("stroke-width", "0.8");
+        pathEl.setAttribute("stroke-width", "2");
         svg.appendChild(pathEl);
 
-        // 2. Gambar Titik Koordinat & Label Nama Titik
-        Object.entries(pattern.points).forEach(([name, pt]) => {
-            // Lingkaran Titik (Node)
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", pt.x);
-            circle.setAttribute("cy", pt.y);
-            circle.setAttribute("r", "0.9");
+        // 3. Gambar Titik Node & Label (Ukuran Proporsional)
+        Object.entries(pts).forEach(([label, pt]) => {
+            const cx = (pt.x * scale) + padding;
+            const cy = (pt.y * scale) + padding;
+
+            // Titik Merah
+            const circle = document.createElementNS(svgNS, "circle");
+            circle.setAttribute("cx", cx);
+            circle.setAttribute("cy", cy);
+            circle.setAttribute("r", "4");
             circle.setAttribute("fill", "#ef4444");
             svg.appendChild(circle);
 
-            // Teks Label (Nama titik & Nilai x,y)
-            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            
-            // Penyesuaian offset posisi teks agar tidak saling bertumpuk
-            let offsetX = 1.2;
-            let offsetY = -1.2;
-            if (pt.x === 0) offsetX = -4.5; // Jika di garis lipatan tengah
+            // Teks Nama Titik & Koordinat
+            const text = document.createElementNS(svgNS, "text");
+            let offsetX = 8;
+            let offsetY = 4;
+            if (pt.x === 0) offsetX = -55; // Geser teks jika di lipatan kiri
 
-            text.setAttribute("x", pt.x + offsetX);
-            text.setAttribute("y", pt.y + offsetY);
-            text.setAttribute("font-size", "2.2");
-            text.setAttribute("font-family", "sans-serif");
-            text.setAttribute("font-weight", "bold");
-            text.setAttribute("fill", "#1e293b");
-            text.textContent = `${name} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`;
+            text.setAttribute("x", cx + offsetX);
+            text.setAttribute("y", cy + offsetY);
+            text.setAttribute("font-size", "11px");
+            text.setAttribute("font-family", "Arial, sans-serif");
+            text.setAttribute("font-weight", "600");
+            text.setAttribute("fill", "#334155");
+            text.textContent = `${label} (${pt.x}, ${pt.y})`;
             svg.appendChild(text);
         });
 

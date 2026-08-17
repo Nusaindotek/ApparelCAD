@@ -1,128 +1,126 @@
 export class ApparelCAD {
     constructor(sizeChart) {
         this.sizeChart = sizeChart;
-        this.defaultSeams = {
-            general: 1,  // 1 cm untuk obraks/bahu/samping
-            hem: 2.5,    // 2.5 cm untuk kelim bawah
-            fold: 0      // 0 cm untuk lipatan tengah
+    }
+
+    getSpecs(size) {
+        // Fallback aman jika ukuran tidak ditemukan di config
+        return this.sizeChart[size] || {
+            chest: 104, length: 72, shoulder: 46,
+            sleeveLength: 22, armhole: 50, neckWidth: 19
         };
     }
 
-    /**
-     * Pola Badan Depan
-     */
     draftTShirtFront(size) {
-        const specs = this._getSpecs(size);
-        const halfChest = specs.chestWidth / 2;
-        const halfShoulder = specs.shoulderWidth / 2;
-        const halfNeck = specs.neckWidth / 2;
+        const spec = this.getSpecs(size);
+        const w = spec.chest / 4;        // Lebar 1/4 badan
+        const l = spec.length;           // Panjang baju
+        const sh = spec.shoulder / 2;    // Lebar bahu (setengah)
+        const nw = spec.neckWidth / 2;   // Lebar leher (setengah)
+        const nd = 9;                    // Turun leher depan
+        const shDrop = 4;                // Kemiringan bahu
+        const scye = (spec.armhole / 2) + 2; // Kedalaman kerung ketiak
 
         return {
-            part: "Front Body",
-            size: size,
+            part: "Front Body", size: size,
             points: {
-                A: { x: halfNeck, y: 0 },
-                B: { x: 0, y: specs.frontNeckDrop },
-                C: { x: halfShoulder, y: specs.shoulderDrop },
-                D: { x: halfChest, y: specs.armholeStraight },
-                E: { x: halfChest, y: specs.bodyLength },
-                F: { x: 0, y: specs.bodyLength }
+                A: { x: 0, y: nd },       // Tengah Depan Leher
+                B: { x: nw, y: 0 },       // Titik Leher Bahu
+                C: { x: sh, y: shDrop },  // Ujung Bahu
+                D: { x: w, y: scye },     // Titik Ketiak (Dada)
+                E: { x: w, y: l },        // Ujung Bawah Sisi
+                F: { x: 0, y: l }         // Tengah Depan Bawah
             },
             path: [
-                { type: "line", from: "F", to: "B", description: "Lipatan Tengah Depan" },
-                { type: "curve", from: "B", to: "A", description: "Kerungan Leher Depan" },
-                { type: "line", from: "A", to: "C", description: "Jahitan Bahu" },
-                { type: "curve", from: "C", to: "D", description: "Kerungan Lengan" },
-                { type: "line", from: "D", to: "E", description: "Jahitan Samping" },
-                { type: "line", from: "E", to: "F", description: "Kelim Bawah" }
+                // Kurva leher melengkung ke dalam
+                { from: 'A', to: 'B', type: 'curve', cpx: 0, cpy: 0 }, 
+                { from: 'B', to: 'C', type: 'line' },
+                // Kurva kerung lengan (Armhole)
+                { from: 'C', to: 'D', type: 'curve', cpx: sh - 2, cpy: scye - 4 }, 
+                { from: 'D', to: 'E', type: 'line' },
+                { from: 'E', to: 'F', type: 'line' },
+                { from: 'F', to: 'A', type: 'line' }
             ]
         };
     }
 
-    /**
-     * Pola Badan Belakang
-     */
     draftTShirtBack(size) {
-        const specs = this._getSpecs(size);
-        const halfChest = specs.chestWidth / 2;
-        const halfShoulder = specs.shoulderWidth / 2;
-        const halfNeck = specs.neckWidth / 2;
+        const spec = this.getSpecs(size);
+        const w = spec.chest / 4;
+        const l = spec.length;
+        const sh = spec.shoulder / 2;
+        const nw = spec.neckWidth / 2;
+        const nd = 2.5;                  // Turun leher belakang (lebih dangkal)
+        const shDrop = 4;
+        const scye = (spec.armhole / 2) + 2;
 
         return {
-            part: "Back Body",
-            size: size,
+            part: "Back Body", size: size,
             points: {
-                A: { x: halfNeck, y: 0 },
-                B: { x: 0, y: specs.backNeckDrop },
-                C: { x: halfShoulder, y: specs.shoulderDrop },
-                D: { x: halfChest, y: specs.armholeStraight },
-                E: { x: halfChest, y: specs.bodyLength },
-                F: { x: 0, y: specs.bodyLength }
+                A: { x: 0, y: nd },
+                B: { x: nw, y: 0 },
+                C: { x: sh, y: shDrop },
+                D: { x: w, y: scye },
+                E: { x: w, y: l },
+                F: { x: 0, y: l }
             },
             path: [
-                { type: "line", from: "F", to: "B", description: "Lipatan Tengah Belakang" },
-                { type: "curve", from: "B", to: "A", description: "Kerungan Leher Belakang" },
-                { type: "line", from: "A", to: "C", description: "Jahitan Bahu" },
-                { type: "curve", from: "C", to: "D", description: "Kerungan Lengan" },
-                { type: "line", from: "D", to: "E", description: "Jahitan Samping" },
-                { type: "line", from: "E", to: "F", description: "Kelim Bawah" }
+                { from: 'A', to: 'B', type: 'curve', cpx: 0, cpy: 0 },
+                { from: 'B', to: 'C', type: 'line' },
+                // Kerung lengan belakang tidak se-melengkung bagian depan
+                { from: 'C', to: 'D', type: 'curve', cpx: sh + 0.5, cpy: scye - 5 }, 
+                { from: 'D', to: 'E', type: 'line' },
+                { from: 'E', to: 'F', type: 'line' },
+                { from: 'F', to: 'A', type: 'line' }
             ]
         };
     }
 
-    /**
-     * Pola Lengan (Sleeve)
-     */
     draftTShirtSleeve(size) {
-        const specs = this._getSpecs(size);
+        const spec = this.getSpecs(size);
+        const sl = spec.sleeveLength; 
+        const bicep = (spec.armhole / 2) - 1; // Lebar lengan (ketiak)
+        const capH = 13;                      // Tinggi puncak lengan
+        const cuff = bicep * 0.75;            // Lebar manset bawah
 
         return {
-            part: "Sleeve",
-            size: size,
+            part: "Sleeve", size: size,
             points: {
-                A: { x: 0, y: 0 },
-                B: { x: specs.sleeveOpening + 2, y: specs.sleeveCapHeight },
-                C: { x: specs.sleeveOpening, y: specs.sleeveLength },
-                D: { x: 0, y: specs.sleeveLength }
+                A: { x: 0, y: 0 },          // Puncak Lengan (Lipatan)
+                B: { x: bicep, y: capH },   // Ketiak Lengan
+                C: { x: cuff, y: sl },      // Ujung Manset
+                D: { x: 0, y: sl }          // Tengah Manset
             },
             path: [
-                { type: "curve", from: "A", to: "B", description: "Kerungan Puncak Lengan" },
-                { type: "line", from: "B", to: "C", description: "Jahitan Bawah Lengan" },
-                { type: "line", from: "C", to: "D", description: "Kelim Bawah Lengan" },
-                { type: "line", from: "D", to: "A", description: "Lipatan Tengah Lengan" }
+                // Menggunakan kurva Cubic (Bentuk 'S') untuk ujung lengan
+                { 
+                    from: 'A', to: 'B', type: 'cubic', 
+                    cp1x: bicep * 0.4, cp1y: 0,          // Lengkungan luar di puncak
+                    cp2x: bicep * 0.6, cp2y: capH * 0.9  // Lengkungan dalam di ketiak
+                },
+                { from: 'B', to: 'C', type: 'line' },
+                { from: 'C', to: 'D', type: 'line' },
+                { from: 'D', to: 'A', type: 'line' }
             ]
         };
     }
 
-    /**
-     * Pola Rib Leher (Neck Rib)
-     */
     draftTShirtRib(size) {
-        const specs = this._getSpecs(size);
-        const totalNeckCircumference = (specs.neckWidth * 2) + specs.frontNeckDrop;
-        const ribLength = totalNeckCircumference * 0.85; 
-
+        const spec = this.getSpecs(size);
+        const w = (spec.neckWidth * Math.PI) * 0.85; // Panjang rib disesuaikan lingkar leher
+        const h = 4;
         return {
-            part: "Neck Rib",
-            size: size,
+            part: "Neck Rib", size: size,
             points: {
-                A: { x: 0, y: 0 },
-                B: { x: ribLength / 2, y: 0 },
-                C: { x: ribLength / 2, y: specs.ribWidth * 2 },
-                D: { x: 0, y: specs.ribWidth * 2 }
+                A: { x: 0, y: 0 }, B: { x: w, y: 0 },
+                C: { x: w, y: h }, D: { x: 0, y: h }
             },
             path: [
-                { type: "line", from: "A", to: "B", description: "Atas Rib" },
-                { type: "line", from: "B", to: "C", description: "Samping Rib" },
-                { type: "line", from: "C", to: "D", description: "Bawah Rib" },
-                { type: "line", from: "D", to: "A", description: "Lipatan Rib" }
+                { from: 'A', to: 'B', type: 'line' },
+                { from: 'B', to: 'C', type: 'line' },
+                { from: 'C', to: 'D', type: 'line' },
+                { from: 'D', to: 'A', type: 'line' }
             ]
         };
-    }
-
-    _getSpecs(size) {
-        const specs = this.sizeChart[size];
-        if (!specs) throw new Error(`Ukuran ${size} tidak ditemukan.`);
-        return specs;
     }
 }

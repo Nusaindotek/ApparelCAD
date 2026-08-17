@@ -1,96 +1,130 @@
-export class SVGRenderer {
-    static render(pattern) {
-        const pts = pattern.points;
-        const svgNS = "http://www.w3.org/2000/svg";
+export class ApparelCAD {
+    constructor(sizeChart) {
+        this.sizeChart = sizeChart;
+    }
 
-        // Hitung Bounding Box
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        Object.values(pts).forEach(pt => {
-            if (pt.x < minX) minX = pt.x;
-            if (pt.y < minY) minY = pt.y;
-            if (pt.x > maxX) maxX = pt.x;
-            if (pt.y > maxY) maxY = pt.y;
-        });
+    getSpecs(size) {
+        return this.sizeChart[size] || {
+            chest: 104, length: 72, shoulder: 46,
+            sleeveLength: 22, armhole: 50, neckWidth: 19
+        };
+    }
 
-        const patternWidth = Math.max(maxX - minX, 1);
-        const patternHeight = Math.max(maxY - minY, 1);
+    draftTShirtFront(size) {
+        const spec = this.getSpecs(size);
+        const w = spec.chest / 4;
+        const l = spec.length;
+        const sh = spec.shoulder / 2;
+        const nw = spec.neckWidth / 2;
+        const nd = 9;
+        const shDrop = 4;
+        const scye = (spec.armhole / 2) + 2;
 
-        const cardWidth = 320;
-        const cardHeight = 320;
-        const margin = 70;
-        const drawAreaWidth = cardWidth - (margin * 2);
-        const drawAreaHeight = cardHeight - (margin * 2);
+        return {
+            part: "Front Body", size: size,
+            // Arah serat kain (Grainline) tegak lurus
+            grainline: { x: w / 2, y1: 15, y2: l - 10 },
+            points: {
+                A: { x: 0, y: nd }, B: { x: nw, y: 0 },
+                C: { x: sh, y: shDrop }, D: { x: w, y: scye },
+                E: { x: w, y: l }, F: { x: 0, y: l }
+            },
+            // Tanda Cetekan (Notches) di kerung lengan depan
+            notches: [
+                { pt: 'curve', from: 'C', to: 'D', percent: 0.6 } // 60% dari ketiak
+            ],
+            path: [
+                { from: 'A', to: 'B', type: 'curve', cpx: 0, cpy: 0 },
+                { from: 'B', to: 'C', type: 'line' },
+                { from: 'C', to: 'D', type: 'curve', cpx: sh - 2, cpy: scye - 4 },
+                { from: 'D', to: 'E', type: 'line' },
+                { from: 'E', to: 'F', type: 'line' },
+                { from: 'F', to: 'A', type: 'line' }
+            ]
+        };
+    }
 
-        const scale = Math.min(drawAreaWidth / patternWidth, drawAreaHeight / patternHeight);
-        const offsetX = (cardWidth - (patternWidth * scale)) / 2;
-        const offsetY = (cardHeight - (patternHeight * scale)) / 2;
+    draftTShirtBack(size) {
+        const spec = this.getSpecs(size);
+        const w = spec.chest / 4;
+        const l = spec.length;
+        const sh = spec.shoulder / 2;
+        const nw = spec.neckWidth / 2;
+        const nd = 2.5;
+        const shDrop = 4;
+        const scye = (spec.armhole / 2) + 2;
 
-        const svg = document.createElementNS(svgNS, "svg");
-        svg.setAttribute("width", "100%");
-        svg.setAttribute("height", "auto");
-        svg.setAttribute("viewBox", `0 0 ${cardWidth} ${cardHeight}`);
+        return {
+            part: "Back Body", size: size,
+            grainline: { x: w / 2, y1: 15, y2: l - 10 },
+            points: {
+                A: { x: 0, y: nd }, B: { x: nw, y: 0 },
+                C: { x: sh, y: shDrop }, D: { x: w, y: scye },
+                E: { x: w, y: l }, F: { x: 0, y: l }
+            },
+            // 2 Cetekan di lengan belakang (standar industri)
+            notches: [
+                { pt: 'curve', from: 'C', to: 'D', percent: 0.5 },
+                { pt: 'curve', from: 'C', to: 'D', percent: 0.6 }
+            ],
+            path: [
+                { from: 'A', to: 'B', type: 'curve', cpx: 0, cpy: 0 },
+                { from: 'B', to: 'C', type: 'line' },
+                { from: 'C', to: 'D', type: 'curve', cpx: sh + 0.5, cpy: scye - 5 },
+                { from: 'D', to: 'E', type: 'line' },
+                { from: 'E', to: 'F', type: 'line' },
+                { from: 'F', to: 'A', type: 'line' }
+            ]
+        };
+    }
 
-        // Render Garis Pola (Path)
-        let dPath = "";
-        if (pattern.path) {
-            pattern.path.forEach((step, idx) => {
-                const s = pts[step.from];
-                const e = pts[step.to];
-                
-                const x1 = ((s.x - minX) * scale) + offsetX;
-                const y1 = ((s.y - minY) * scale) + offsetY;
-                const x2 = ((e.x - minX) * scale) + offsetX;
-                const y2 = ((e.y - minY) * scale) + offsetY;
+    draftTShirtSleeve(size) {
+        const spec = this.getSpecs(size);
+        const sl = spec.sleeveLength; 
+        const bicep = (spec.armhole / 2) - 1;
+        const capH = 13;
+        const cuff = bicep * 0.75;
 
-                if (idx === 0) dPath += `M ${x1} ${y1} `;
+        return {
+            part: "Sleeve", size: size,
+            grainline: { x: 0, y1: capH + 2, y2: sl - 2 },
+            points: {
+                A: { x: 0, y: 0 }, B: { x: bicep, y: capH },
+                C: { x: cuff, y: sl }, D: { x: 0, y: sl }
+            },
+            // Cetekan di puncak lengan
+            notches: [{ pt: 'point', node: 'A' }],
+            path: [
+                { 
+                    from: 'A', to: 'B', type: 'cubic', 
+                    cp1x: bicep * 0.4, cp1y: 0,
+                    cp2x: bicep * 0.6, cp2y: capH * 0.9
+                },
+                { from: 'B', to: 'C', type: 'line' },
+                { from: 'C', to: 'D', type: 'line' },
+                { from: 'D', to: 'A', type: 'line' }
+            ]
+        };
+    }
 
-                if (step.type === "cubic") {
-                    // Eksekusi Kurva S untuk Lengan
-                    let cp1x = ((step.cp1x - minX) * scale) + offsetX;
-                    let cp1y = ((step.cp1y - minY) * scale) + offsetY;
-                    let cp2x = ((step.cp2x - minX) * scale) + offsetX;
-                    let cp2y = ((step.cp2y - minY) * scale) + offsetY;
-                    dPath += `C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2} `;
-                } else if (step.type === "curve") {
-                    // Eksekusi Lengkung Biasa (Leher, Ketiak)
-                    let cx = step.cpx !== undefined ? ((step.cpx - minX) * scale) + offsetX : (x1 + x2) / 2;
-                    let cy = step.cpy !== undefined ? ((step.cpy - minY) * scale) + offsetY : (y1 + y2) / 2;
-                    dPath += `Q ${cx} ${cy}, ${x2} ${y2} `;
-                } else {
-                    // Garis Lurus
-                    dPath += `L ${x2} ${y2} `;
-                }
-            });
-            dPath += "Z";
-        }
-
-        const pathEl = document.createElementNS(svgNS, "path");
-        pathEl.setAttribute("d", dPath);
-        pathEl.setAttribute("fill", "rgba(37, 99, 235, 0.08)");
-        pathEl.setAttribute("stroke", "#2563eb");
-        pathEl.setAttribute("stroke-width", "2");
-        pathEl.setAttribute("stroke-linejoin", "round");
-        svg.appendChild(pathEl);
-
-        // Render Titik Label
-        Object.entries(pts).forEach(([label, pt]) => {
-            const cx = ((pt.x - minX) * scale) + offsetX;
-            const cy = ((pt.y - minY) * scale) + offsetY;
-
-            const circle = document.createElementNS(svgNS, "circle");
-            circle.setAttribute("cx", cx); circle.setAttribute("cy", cy);
-            circle.setAttribute("r", "4"); circle.setAttribute("fill", "#ef4444");
-            svg.appendChild(circle);
-
-            const text = document.createElementNS(svgNS, "text");
-            text.setAttribute("x", pt.x === minX ? cx - 48 : cx + 8);
-            text.setAttribute("y", cy + 4);
-            text.setAttribute("font-size", "11px");
-            text.setAttribute("font-family", "Arial");
-            text.textContent = `${label} (${pt.x}, ${pt.y})`;
-            svg.appendChild(text);
-        });
-
-        return svg;
+    draftTShirtRib(size) {
+        const spec = this.getSpecs(size);
+        const w = (spec.neckWidth * Math.PI) * 0.85;
+        const h = 4;
+        return {
+            part: "Neck Rib", size: size,
+            grainline: { x: w / 2, y1: 0.5, y2: h - 0.5 },
+            points: {
+                A: { x: 0, y: 0 }, B: { x: w, y: 0 },
+                C: { x: w, y: h }, D: { x: 0, y: h }
+            },
+            notches: [],
+            path: [
+                { from: 'A', to: 'B', type: 'line' },
+                { from: 'B', to: 'C', type: 'line' },
+                { from: 'C', to: 'D', type: 'line' },
+                { from: 'D', to: 'A', type: 'line' }
+            ]
+        };
     }
 }

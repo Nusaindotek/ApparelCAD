@@ -4,32 +4,29 @@ import { SVGRenderer } from './renderers/SVGRenderer.js';
 
 const cad = new ApparelCAD(TShirtSizeChart);
 
-// 1. Generate semua potongan pola
+// Render 4 kepingan pola Kaos Oblong
 const patterns = [
     cad.draftTShirtFront('M'),
     cad.draftTShirtBack('M'),
-    cad.draftTShirtSleeve('M')
+    cad.draftTShirtSleeve('M'),
+    cad.draftTShirtRib('M')
 ];
 
-// 2. Render visual SVG ke HTML
 const container = document.getElementById('apparel-canvas');
 
 if (container) {
+    container.innerHTML = '';
     patterns.forEach(pattern => {
-        // Buat kartu pembungkus tiap pola
         const card = document.createElement('div');
         card.className = 'pattern-card';
         
-        // Judul Pola
         const title = document.createElement('h3');
         title.innerText = `${pattern.part} (${pattern.size})`;
         card.appendChild(title);
 
-        // Render elemen SVG
         const svgElement = SVGRenderer.render(pattern);
         card.appendChild(svgElement);
 
-        // Masukkan ke container utama
         container.appendChild(card);
     });
 }

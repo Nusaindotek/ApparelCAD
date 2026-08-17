@@ -1,41 +1,60 @@
+// src/renderers/SVGRenderer.js
 export class SVGRenderer {
-    /**
-     * Render pola ke bentuk elemen SVG
-     */
     static render(patternData, scale = 5) {
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
         
-        // Atur dimensi canvas SVG (skala tampilan agar muat di layar)
         svg.setAttribute("width", "350");
         svg.setAttribute("height", "450");
         svg.setAttribute("viewBox", `-20 -20 350 450`);
 
-        // 1. Gambar Garis Pola (Path)
+        const pts = patternData.points;
         let dPath = "";
-        const points = patternData.points;
 
-        // Hubungkan titik-titik (A -> B -> C -> dst)
-        const pointKeys = Object.keys(points);
-        pointKeys.forEach((key, index) => {
-            const pt = points[key];
-            const x = pt.x * scale;
-            const y = pt.y * scale;
+        // Mengikuti urutan array path (bukan urutan abjad titik)
+        if (patternData.path && patternData.path.length > 0) {
+            patternData.path.forEach((step, idx) => {
+                const start = pts[step.from];
+                const end = pts[step.to];
 
-            if (index === 0) {
-                dPath += `M ${x} ${y} `;
-            } else {
-                dPath += `L ${x} ${y} `;
-            }
-        });
-        dPath += "Z"; // Tutup path
+                const x1 = start.x * scale;
+                const y1 = start.y * scale;
+                const x2 = end.x * scale;
+                const y2 = end.y * scale;
 
+                if (idx === 0) {
+                    dPath += `M ${x1} ${y1} `;
+                }
+
+                if (step.type === "curve") {
+                    // Kalkulasi Titik Kontrol Kurva (Bézier Curve)
+                    let cx = (x1 + x2) / 2;
+                    let cy = (y1 + y2) / 2;
+
+                    // Penyesuaian kelengkungan kerung leher dan ketiak
+                    if (step.from === "B" && step.to === "A") { 
+                        cx = x1; cy = y2; // Lengkungan Leher
+                    } else if (step.from === "C" && step.to === "D") { 
+                        cx = x1 - 15; cy = (y1 + y2) / 2; // Lengkungan Kerungan Lengan
+                    } else if (step.from === "A" && step.to === "B" && patternData.part === "Sleeve") { 
+                        cx = x2 * 0.4; cy = y1 - 10; // Lengkungan Puncak Lengan
+                    }
+
+                    dPath += `Q ${cx} ${cy}, ${x2} ${y2} `;
+                } else {
+                    dPath += `L ${x2} ${y2} `;
+                }
+            });
+            dPath += "Z";
+        }
+
+        // 1. Gambar Garis Pola
         const pathEl = document.createElementNS(svgNS, "path");
         pathEl.setAttribute("d", dPath);
         svg.appendChild(pathEl);
 
-        // 2. Gambar Titik Koordinat & Label (A, B, C...)
-        Object.entries(points).forEach(([label, pt]) => {
+        // 2. Gambar Titik Koordinat & Label
+        Object.entries(pts).forEach(([label, pt]) => {
             const cx = pt.x * scale;
             const cy = pt.y * scale;
 

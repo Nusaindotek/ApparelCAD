@@ -11,6 +11,11 @@ export const TShirtSizeChart = {
         armholeStraight: 24,
         shoulderDrop: 3,
         frontNeckDrop: 10,
-        backNeckDrop: 2.5 // Turunan leher belakang (jauh lebih dangkal)
+        backNeckDrop: 2.5,
+        // -- Parameter Lengan & Rib --
+        sleeveLength: 22,       // Panjang Lengan
+        sleeveOpening: 17,      // Lebar Bukaan Bawah Lengan (Setengah)
+        sleeveCapHeight: 12,    // Tinggi Puncak Kerungan Lengan
+        ribWidth: 2             // Lebar Jahitan Rib Leher
     }
 };

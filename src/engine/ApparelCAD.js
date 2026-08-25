@@ -1,11 +1,11 @@
 export class ApparelCAD {
     constructor() {
-        // Spec Shortpants (Panjang 30cm + Ban 3.5cm)
+        // Standar potongan setengah pola Shortpants Rib Knit (cm)
         this.sizeChart = {
-            S:  { waist: 14, hip: 17, length: 30, crotchDepth: 20, leg: 18 },
-            M:  { waist: 15, hip: 18.25, length: 30, crotchDepth: 21, leg: 19 },
-            L:  { waist: 16.25, hip: 19.5, length: 30, crotchDepth: 22, leg: 20 },
-            XL: { waist: 17.5, hip: 20.75, length: 30, crotchDepth: 23, leg: 21 }
+            S:  { waist: 18, hip: 21, length: 30, crotchDepth: 20, leg: 19 },
+            M:  { waist: 19, hip: 22, length: 30, crotchDepth: 21, leg: 20 },
+            L:  { waist: 20, hip: 23, length: 30, crotchDepth: 22, leg: 21 },
+            XL: { waist: 21, hip: 24, length: 30, crotchDepth: 23, leg: 22 }
         };
     }
 
@@ -15,73 +15,66 @@ export class ApparelCAD {
         const wHip = isBack ? spec.hip + 1.5 : spec.hip;
         const l = spec.length + 3.5;
         const cd = spec.crotchDepth;
-        const crotchExt = isBack ? 7.5 : 3.5;
+        const crotchExt = isBack ? 6.0 : 3.0; // Kerukan pesak
         const legW = spec.leg;
-        const rise = isBack ? 3.0 : 0;
+        const rise = isBack ? 2.5 : 0;
+
+        const boundingWidth = wHip + crotchExt;
+        const boundingHeight = l + rise;
 
         return {
             part: `${isBack ? 'Belakang' : 'Depan'} (${size})`,
             size: size,
-            width: wHip + crotchExt + 2,
-            height: l + rise,
-            // Titik koordinat geometris akurat celana
+            isBack: isBack,
+            width: boundingWidth,
+            height: boundingHeight,
             points: {
-                topRight: { x: crotchExt + wWaist, y: 0 },
-                hipRight: { x: crotchExt + wHip, y: cd * 0.5 },
-                hemRight: { x: crotchExt + legW, y: l },
-                hemLeft:  { x: crotchExt, y: l },
-                crotchTip: { x: 0, y: cd },
-                topLeft:  { x: crotchExt, y: rise }
+                topLeft:   { x: crotchExt, y: rise },
+                topRight:  { x: crotchExt + wWaist, y: 0 },
+                hipRight:  { x: crotchExt + wHip, y: cd * 0.6 },
+                hemRight:  { x: crotchExt + legW, y: l + rise },
+                hemLeft:   { x: crotchExt, y: l + rise },
+                crotchTip: { x: 0, y: cd + rise }
             },
-            // Titik kontrol kelengkungan pesak (Crotch Bezier Curve)
-            controlPoint: { x: crotchExt * 0.3, y: cd * 0.7 }
+            controlPoint: { x: crotchExt * 0.25, y: (cd + rise) * 0.75 }
         };
     }
 
     generateOptimizedMarker(fabricWidthCM = 80) {
-        const sizes = ['XL', 'S', 'L', 'M'];
-        const patternsData = sizes.map(size => ({
-            size,
-            front: this.draftShortpantsPart(size, false),
-            back: this.draftShortpantsPart(size, true)
-        }));
+        const pairs = [
+            { bigSize: 'XL', smallSize: 'S' },
+            { bigSize: 'L',  smallSize: 'M' }
+        ];
 
         let layoutPatterns = [];
-        
-        // Jarak aman horizontal antar pola (Mencegah Overlap)
-        const gap = 4;
-        
-        // Baris 1: XL (Kiri) & S (Kanan)
-        const xlFront = patternsData[0].front;
-        const xlBack = patternsData[0].back;
-        const sFront = patternsData[1].front;
-        const sBack = patternsData[1].back;
+        let currentY = 4; // Margin atas 4 cm
+        const marginX = 2; // Margin tepi kain 2 cm
+        const gap = 3;     // Jarak minimal antar-pola 3 cm
 
-        const row1MaxH = Math.max(xlFront.height, xlBack.height, sFront.height, sBack.height);
+        pairs.forEach(pair => {
+            const bigF = this.draftShortpantsPart(pair.bigSize, false);
+            const bigB = this.draftShortpantsPart(pair.bigSize, true);
+            const smF  = this.draftShortpantsPart(pair.smallSize, false);
+            const smB  = this.draftShortpantsPart(pair.smallSize, true);
 
-        layoutPatterns.push({ data: xlFront, offsetX: 3, offsetY: 5 });
-        layoutPatterns.push({ data: xlBack, offsetX: 3 + xlFront.width + gap, offsetY: 5 });
+            // Perhitungan Posisi X Kumulatif Tanpa Bentrok (Strict Non-Overlapping)
+            const x1 = marginX;
+            const x2 = x1 + bigF.width + gap;
+            const x3 = x2 + bigB.width + gap;
+            const x4 = x3 + smF.width + gap;
 
-        const rightColX = Math.max(fabricWidthCM / 2 + 2, 3 + xlFront.width + xlBack.width + (gap * 2));
-        layoutPatterns.push({ data: sFront, offsetX: rightColX, offsetY: 5 });
-        layoutPatterns.push({ data: sBack, offsetX: rightColX + sFront.width + gap, offsetY: 5 });
+            // Masukkan ke susunan layout
+            layoutPatterns.push({ data: bigF, offsetX: x1, offsetY: currentY });
+            layoutPatterns.push({ data: bigB, offsetX: x2, offsetY: currentY });
+            layoutPatterns.push({ data: smF,  offsetX: x3, offsetY: currentY });
+            layoutPatterns.push({ data: smB,  offsetX: x4, offsetY: currentY });
 
-        // Baris 2: L (Kiri) & M (Kanan)
-        const lFront = patternsData[2].front;
-        const lBack = patternsData[2].back;
-        const mFront = patternsData[3].front;
-        const mBack = patternsData[3].back;
+            // Hitung tinggi maksimum baris
+            const rowHeight = Math.max(bigF.height, bigB.height, smF.height, smB.height);
+            currentY += rowHeight + gap;
+        });
 
-        const row2MaxH = Math.max(lFront.height, lBack.height, mFront.height, mBack.height);
-        const yRow2 = row1MaxH + 15;
-
-        layoutPatterns.push({ data: lFront, offsetX: 3, offsetY: yRow2 });
-        layoutPatterns.push({ data: lBack, offsetX: 3 + lFront.width + gap, offsetY: yRow2 });
-
-        layoutPatterns.push({ data: mFront, offsetX: rightColX, offsetY: yRow2 });
-        layoutPatterns.push({ data: mBack, offsetX: rightColX + mFront.width + gap, offsetY: yRow2 });
-
-        const totalLengthCM = yRow2 + row2MaxH + 10;
+        const totalLengthCM = currentY + marginX;
         const metersPerSpread = (totalLengthCM / 100).toFixed(2);
 
         return {

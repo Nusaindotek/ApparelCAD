@@ -18,11 +18,12 @@ export class SVGRenderer {
             const p = item.data;
             const pts = p.points;
             const cp = p.controlPoint;
-            
-            const group = document.createElementNS(svgNS, "g");
-            group.setAttribute("transform", `translate(${item.offsetX * scale}, ${item.offsetY * scale})`);
 
-            // Merakit garis & kurva pesak dengan perkalian skala tepat
+            const group = document.createElementNS(svgNS, "g");
+            const posX = item.offsetX * scale;
+            const posY = item.offsetY * scale;
+            group.setAttribute("transform", `translate(${posX}, ${posY})`);
+
             const dPath = `
                 M ${pts.topLeft.x * scale} ${pts.topLeft.y * scale}
                 L ${pts.topRight.x * scale} ${pts.topRight.y * scale}
@@ -35,17 +36,17 @@ export class SVGRenderer {
 
             const pathEl = document.createElementNS(svgNS, "path");
             pathEl.setAttribute("d", dPath);
-            pathEl.setAttribute("fill", "rgba(56, 189, 248, 0.15)");
-            pathEl.setAttribute("stroke", "#38bdf8");
+            pathEl.setAttribute("fill", p.isBack ? "rgba(56, 189, 248, 0.15)" : "rgba(129, 140, 248, 0.15)");
+            pathEl.setAttribute("stroke", p.isBack ? "#38bdf8" : "#818cf8");
             pathEl.setAttribute("stroke-width", "1.5");
             group.appendChild(pathEl);
 
             // Label Nama Pola
             const text = document.createElementNS(svgNS, "text");
-            text.setAttribute("x", (pts.topLeft.x + 2) * scale);
-            text.setAttribute("y", 20);
+            text.setAttribute("x", (pts.topLeft.x + 1) * scale);
+            text.setAttribute("y", (pts.topLeft.y + 5) * scale);
             text.setAttribute("fill", "#f8fafc");
-            text.setAttribute("font-size", "10px");
+            text.setAttribute("font-size", "9px");
             text.setAttribute("font-weight", "bold");
             text.textContent = p.part;
             group.appendChild(text);

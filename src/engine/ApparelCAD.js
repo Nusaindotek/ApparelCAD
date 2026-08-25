@@ -69,29 +69,30 @@ export class ApparelCAD {
         };
     }
 
-    // Perhitungan khusus Kain Tubular (Default 80cm lipat = 160cm keliling)
+    // Kalkulasi marker dengan lebar kain fleksibel sesuai input aktual rol
     generateMarker(size, fabricWidthCM = 80, isTubular = true) {
         const front = this.draftShortLeggingFront(size);
         const back = this.draftShortLeggingBack(size);
         const spec = this.sizeChart[size] || this.sizeChart['M'];
         
-        const patternHeight = spec.length + 5; // Toleransi kelim/pinggang
+        const patternHeight = spec.length + 5; 
         let requiredLengthMeters = 0;
         let layoutPatterns = [];
 
-        if (isTubular) {
-            // Pada kain tubular 80cm, 1 layer (2 lapis kain) cukup untuk 1 pasang legging (kiri & kanan)
-            // Pola disusun bertumpuk/berselang-seling secara vertikal
-            requiredLengthMeters = ((patternHeight * 2) + 4) / 100;
+        // Validasi batasan fisik: Jika pola melebihi lebar kain aktual, beri peringatan atau sesuaikan tata letak
+        const maxPatternWidth = Math.max(spec.hip/4, spec.legOpening/2) + 5;
+        if (isTubular && fabricWidthCM < maxPatternWidth) {
+            console.warn("Peringatan: Lebar kain tubular terlalu sempit untuk ukuran ini!");
+        }
 
+        if (isTubular) {
+            requiredLengthMeters = ((patternHeight * 2) + 4) / 100;
             layoutPatterns = [
-                { data: front, offsetX: 10, offsetY: 5, rotate: 0 },
-                { data: back, offsetX: (spec.hip / 4) + 15, offsetY: patternHeight + 10, rotate: 180 }
+                { data: front, offsetX: 5, offsetY: 5, rotate: 0 },
+                { data: back, offsetX: fabricWidthCM / 2, offsetY: patternHeight + 5, rotate: 180 }
             ];
         } else {
-            // Jika kain dibelah (Open Width 160cm)
             requiredLengthMeters = (patternHeight + 4) / 100;
-
             layoutPatterns = [
                 { data: front, offsetX: 10, offsetY: 5, rotate: 0 },
                 { data: back, offsetX: (spec.hip / 2) + 20, offsetY: patternHeight, rotate: 180 }
@@ -101,7 +102,7 @@ export class ApparelCAD {
         return {
             size: size,
             isTubular: isTubular,
-            fabricWidth: fabricWidthCM,
+            fabricWidth: Number(fabricWidthCM),
             patternHeight: isTubular ? (patternHeight * 2) + 15 : patternHeight + 10,
             estimatedYield: requiredLengthMeters.toFixed(2),
             patterns: layoutPatterns

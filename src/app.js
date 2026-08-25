@@ -1,51 +1,38 @@
-import { TShirtSizeChart } from './config/sizeChart.js';
 import { ApparelCAD } from './engine/ApparelCAD.js';
 import { SVGRenderer } from './renderers/SVGRenderer.js';
 
-const cad = new ApparelCAD(TShirtSizeChart);
+const cad = new ApparelCAD();
 
-function renderPatterns(selectedSize) {
+function renderApp() {
     const container = document.getElementById('apparel-canvas');
+    const sizeSelect = document.getElementById('sizeSelect');
     if (!container) return;
-
+    
+    const selectedSize = sizeSelect ? sizeSelect.value : 'M';
     container.innerHTML = '';
 
-    try {
-        const patterns = [
-            cad.draftTShirtFront(selectedSize),
-            cad.draftTShirtBack(selectedSize),
-            cad.draftTShirtSleeve(selectedSize),
-            cad.draftTShirtRib(selectedSize)
-        ];
+    const marker = cad.generateMarker(selectedSize, 150);
 
-        patterns.forEach(pattern => {
-            const card = document.createElement('div');
-            card.className = 'pattern-card';
-            
-            const title = document.createElement('h3');
-            title.innerText = `${pattern.part} (${pattern.size})`;
-            card.appendChild(title);
+    const infoCard = document.createElement('div');
+    infoCard.style.cssText = "background:#1e293b; color:#fff; padding:15px; border-radius:8px; margin-bottom:15px; grid-column:1/-1;";
+    infoCard.innerHTML = `
+        <h4 style="margin:0 0 5px 0;">Kalkulasi Kain - Short Legging Rib Knit (Size ${marker.size})</h4>
+        <p style="margin:0; font-size:14px; color:#cbd5e1;">
+            Panjang Bawahan: <strong>30 cm</strong> | 
+            Lingkar Pinggang: <strong>${cad.sizeChart[selectedSize].waist} cm</strong> | 
+            Estimasi Kain per Pcs: <strong>${marker.estimatedYield} Meter</strong> (Lebar Kain ${marker.fabricWidth} cm)
+        </p>
+    `;
 
-            const svgElement = SVGRenderer.render(pattern);
-            card.appendChild(svgElement);
+    const svgElement = SVGRenderer.renderMarker(marker);
 
-            container.appendChild(card);
-        });
-    } catch (error) {
-        console.error("ApparelCAD Error:", error);
-        container.innerHTML = `
-            <div style="background:#fee2e2; border:1px solid #f87171; color:#991b1b; padding:15px; border-radius:8px; width:100%;">
-                <strong>⚠️ Gagal Memuat Pola:</strong> ${error.message}
-            </div>`;
-    }
+    container.appendChild(infoCard);
+    container.appendChild(svgElement);
 }
 
 const sizeSelect = document.getElementById('sizeSelect');
-const currentSize = sizeSelect ? sizeSelect.value : 'M';
-renderPatterns(currentSize);
-
 if (sizeSelect) {
-    sizeSelect.addEventListener('change', (e) => {
-        renderPatterns(e.target.value);
-    });
+    sizeSelect.addEventListener('change', renderApp);
 }
+
+renderApp();

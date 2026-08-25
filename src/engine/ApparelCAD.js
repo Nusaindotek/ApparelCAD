@@ -1,6 +1,5 @@
 export class ApparelCAD {
     constructor() {
-        // Standar potongan setengah pola Shortpants Rib Knit (cm)
         this.sizeChart = {
             S:  { waist: 18, hip: 21, length: 30, crotchDepth: 20, leg: 19 },
             M:  { waist: 19, hip: 22, length: 30, crotchDepth: 21, leg: 20 },
@@ -15,7 +14,7 @@ export class ApparelCAD {
         const wHip = isBack ? spec.hip + 1.5 : spec.hip;
         const l = spec.length + 3.5;
         const cd = spec.crotchDepth;
-        const crotchExt = isBack ? 6.0 : 3.0; // Kerukan pesak
+        const crotchExt = isBack ? 6.0 : 3.0;
         const legW = spec.leg;
         const rise = isBack ? 2.5 : 0;
 
@@ -40,41 +39,45 @@ export class ApparelCAD {
         };
     }
 
+    // Algoritma Shelf Packing: Otomatis turun baris jika melebihi lebar kain aktual
     generateOptimizedMarker(fabricWidthCM = 80) {
-        const pairs = [
-            { bigSize: 'XL', smallSize: 'S' },
-            { bigSize: 'L',  smallSize: 'M' }
-        ];
+        const sizes = ['XL', 'L', 'M', 'S'];
+        let allParts = [];
 
-        let layoutPatterns = [];
-        let currentY = 4; // Margin atas 4 cm
-        const marginX = 2; // Margin tepi kain 2 cm
-        const gap = 3;     // Jarak minimal antar-pola 3 cm
-
-        pairs.forEach(pair => {
-            const bigF = this.draftShortpantsPart(pair.bigSize, false);
-            const bigB = this.draftShortpantsPart(pair.bigSize, true);
-            const smF  = this.draftShortpantsPart(pair.smallSize, false);
-            const smB  = this.draftShortpantsPart(pair.smallSize, true);
-
-            // Perhitungan Posisi X Kumulatif Tanpa Bentrok (Strict Non-Overlapping)
-            const x1 = marginX;
-            const x2 = x1 + bigF.width + gap;
-            const x3 = x2 + bigB.width + gap;
-            const x4 = x3 + smF.width + gap;
-
-            // Masukkan ke susunan layout
-            layoutPatterns.push({ data: bigF, offsetX: x1, offsetY: currentY });
-            layoutPatterns.push({ data: bigB, offsetX: x2, offsetY: currentY });
-            layoutPatterns.push({ data: smF,  offsetX: x3, offsetY: currentY });
-            layoutPatterns.push({ data: smB,  offsetX: x4, offsetY: currentY });
-
-            // Hitung tinggi maksimum baris
-            const rowHeight = Math.max(bigF.height, bigB.height, smF.height, smB.height);
-            currentY += rowHeight + gap;
+        // Kumpulkan 8 bagian pola lengkap (Depan & Belakang untuk S, M, L, XL)
+        sizes.forEach(size => {
+            allParts.push(this.draftShortpantsPart(size, false));
+            allParts.push(this.draftShortpantsPart(size, true));
         });
 
-        const totalLengthCM = currentY + marginX;
+        let layoutPatterns = [];
+        let currentX = 3;
+        let currentY = 4;
+        let maxHeightInRow = 0;
+        const gap = 3;
+        const margin = 3;
+
+        allParts.forEach(part => {
+            // Jika lebar melebihi batas kain, pindah ke baris ke bawah
+            if (currentX + part.width > fabricWidthCM - margin) {
+                currentX = margin;
+                currentY += maxHeightInRow + gap;
+                maxHeightInRow = 0;
+            }
+
+            layoutPatterns.push({
+                data: part,
+                offsetX: currentX,
+                offsetY: currentY
+            });
+
+            currentX += part.width + gap;
+            if (part.height > maxHeightInRow) {
+                maxHeightInRow = part.height;
+            }
+        });
+
+        const totalLengthCM = currentY + maxHeightInRow + margin;
         const metersPerSpread = (totalLengthCM / 100).toFixed(2);
 
         return {

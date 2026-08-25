@@ -1,64 +1,63 @@
 export class ApparelCAD {
     constructor() {
+        // Ukuran potongan setengah pola Shortpants Rib Knit (cm)
         this.sizeChart = {
-            S:  { waist: 18, hip: 21, length: 30, crotchDepth: 20, leg: 19 },
-            M:  { waist: 19, hip: 22, length: 30, crotchDepth: 21, leg: 20 },
-            L:  { waist: 20, hip: 23, length: 30, crotchDepth: 22, leg: 21 },
-            XL: { waist: 21, hip: 24, length: 30, crotchDepth: 23, leg: 22 }
+            S:  { waist: 16, hip: 20, length: 30, crotchDepth: 20, leg: 18 },
+            M:  { waist: 17, hip: 21, length: 30, crotchDepth: 21, leg: 19 },
+            L:  { waist: 18, hip: 22, length: 30, crotchDepth: 22, leg: 20 },
+            XL: { waist: 19, hip: 23, length: 30, crotchDepth: 23, leg: 21 }
         };
     }
 
+    // Pembuatan geometri persis sesuai diagram titik 1-17 gambar Anda
     draftShortpantsPart(size, isBack = false) {
         const spec = this.sizeChart[size];
         const wWaist = spec.waist;
-        const wHip = isBack ? spec.hip + 1.5 : spec.hip;
-        const l = spec.length + 3.5;
-        const cd = spec.crotchDepth;
-        const crotchExt = isBack ? 6.0 : 3.0;
+        const wHip = spec.hip;
+        const l = spec.length + 3.5; // Total tinggi celana
+        const cd = spec.crotchDepth; // Tinggi pesak (Crotch Depth)
+        const crotchExt = isBack ? 6.5 : 3.5; // Tonjolan pesak (Poin 15/17)
         const legW = spec.leg;
-        const rise = isBack ? 2.5 : 0;
-
-        const boundingWidth = wHip + crotchExt;
-        const boundingHeight = l + rise;
+        const rise = isBack ? 3.0 : 0; // Kenaikan ban pinggang belakang (Poin 13)
 
         return {
             part: `${isBack ? 'Belakang' : 'Depan'} (${size})`,
             size: size,
             isBack: isBack,
-            width: boundingWidth,
-            height: boundingHeight,
+            width: wHip + crotchExt,
+            height: l + rise,
+            // Koordinat Titik Sesuai Diagram
             points: {
-                topLeft:   { x: crotchExt, y: rise },
-                topRight:  { x: crotchExt + wWaist, y: 0 },
-                hipRight:  { x: crotchExt + wHip, y: cd * 0.6 },
-                hemRight:  { x: crotchExt + legW, y: l + rise },
-                hemLeft:   { x: crotchExt, y: l + rise },
-                crotchTip: { x: 0, y: cd + rise }
+                waistIn:   { x: crotchExt, y: 0 },                  // Poin 13 (Pinggang Dalam)
+                waistOut:  { x: crotchExt + wWaist, y: rise },      // Poin 10/12 (Pinggang Samping)
+                hipOut:    { x: crotchExt + wHip, y: cd },          // Poin 14/16 (Sisi Pinggul)
+                legOut:    { x: crotchExt + legW, y: l + rise },    // Poin 2 (Paha Samping)
+                legIn:     { x: crotchExt, y: l + rise },           // Poin 2 (Paha Dalam)
+                crotchTip: { x: 0, y: cd + rise }                   // Poin 15/17 (Ujung Pesak Melengkung)
             },
-            controlPoint: { x: crotchExt * 0.25, y: (cd + rise) * 0.75 }
+            controlPoint: { x: crotchExt * 0.2, y: (cd + rise) * 0.85 }
         };
     }
 
-    // Algoritma Shelf Packing: Otomatis turun baris jika melebihi lebar kain aktual
+    // Shelf-Packing Layout: Menyusun pola otomatis turun baris jika melebihi lebar kain
     generateOptimizedMarker(fabricWidthCM = 80) {
         const sizes = ['XL', 'L', 'M', 'S'];
         let allParts = [];
 
-        // Kumpulkan 8 bagian pola lengkap (Depan & Belakang untuk S, M, L, XL)
         sizes.forEach(size => {
             allParts.push(this.draftShortpantsPart(size, false));
             allParts.push(this.draftShortpantsPart(size, true));
         });
 
         let layoutPatterns = [];
-        let currentX = 3;
+        let currentX = 2;
         let currentY = 4;
         let maxHeightInRow = 0;
         const gap = 3;
-        const margin = 3;
+        const margin = 2;
 
         allParts.forEach(part => {
-            // Jika lebar melebihi batas kain, pindah ke baris ke bawah
+            // Jika lebar menyentuh batas kain (80cm/90cm), pindah ke baris bawahnya
             if (currentX + part.width > fabricWidthCM - margin) {
                 currentX = margin;
                 currentY += maxHeightInRow + gap;

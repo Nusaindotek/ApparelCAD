@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ApparelCAD - Industrial Pattern Visualizer</title>
-    <link rel="stylesheet" href="./src/styles/app.css">
+    <title>Shortpants CAD & Marker Calculator</title>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; padding: 20px; margin: 0; }
+        .control-panel { background: #1e293b; padding: 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #334155; }
+        .input-group { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+        input[type="number"] { width: 90px; padding: 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #38bdf8; font-size: 16px; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <header>
-        <div>
-            <h1 style="margin:0;">ApparelCAD v1.0</h1>
-            <p style="margin:4px 0 0 0; color:#64748b;">Visualisasi & Grading Pola Kaos Oblong Massal</p>
+
+    <h2>Kalkulator Marker & Pola Shortpants Massal</h2>
+    <p style="color: #94a3b8; font-size: 14px;">Optimasi Tata Letak Anti-Waste & Perhitungan Kain Presisi per Gelar</p>
+
+    <div class="control-panel">
+        <div class="input-group">
+            <label for="fabricWidth">Masukkan Lebar Roll Kain Aktual (cm):</label>
+            <input type="number" id="fabricWidth" value="80" min="50" max="150" />
         </div>
-        <div class="controls">
-            <label for="sizeSelect"><strong>Pilih Ukuran (Grading):</strong></label>
-            <select id="sizeSelect">
-                <option value="S">Ukuran S</option>
-                <option value="M" selected>Ukuran M</option>
-                <option value="L">Ukuran L</option>
-                <option value="XL">Ukuran XL</option>
-            </select>
-        </div>
-    </header>
+    </div>
 
     <div id="apparel-canvas"></div>
 

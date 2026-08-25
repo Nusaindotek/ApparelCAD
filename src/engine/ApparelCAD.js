@@ -1,5 +1,6 @@
 export class ApparelCAD {
     constructor() {
+        // Spec Spesifik Shortpants (Panjang 30 cm + Ban Pinggang 3.5 cm)
         this.sizeChart = {
             S:  { waist: 55, hip: 68, length: 30, crotchDepth: 20, legOpening: 36 },
             M:  { waist: 60, hip: 73, length: 30, crotchDepth: 21, legOpening: 38 },
@@ -8,18 +9,19 @@ export class ApparelCAD {
         };
     }
 
-    draftLeggingPart(size, isBack = false) {
+    // Geometri Pola Celana Pendek
+    draftShortpantsPart(size, isBack = false) {
         const spec = this.sizeChart[size];
         const wWaist = spec.waist / 4;
         const wHip = isBack ? (spec.hip / 4) + 1.5 : spec.hip / 4;
-        const l = spec.length + 3.5; // Termasuk kampuh ban pinggang elastis 3.5cm
+        const l = spec.length + 3.5; // Karet elastis ban pinggang
         const cd = spec.crotchDepth;
         const crotchExt = isBack ? spec.hip / 10 : spec.hip / 20;
         const legW = spec.legOpening / 2;
         const rise = isBack ? 3.0 : 0;
 
         return {
-            part: `${isBack ? 'Back' : 'Front'} (${size})`,
+            part: `${isBack ? 'Belakang' : 'Depan'} (${size})`,
             size: size,
             width: wHip + crotchExt,
             height: l,
@@ -42,43 +44,43 @@ export class ApparelCAD {
         };
     }
 
-    // Auto-Nesting Full Set (S, M, L, XL) & Kalkulasi Panjang Kain per 1 Gelaran
-    generateFullSetMarker(fabricWidthCM = 80) {
-        const sizes = ['S', 'M', 'L', 'XL'];
+    // Penguncian Layout Anti-Waste Pasangan (XL + S) dan (L + M)
+    generateOptimizedMarker(fabricWidthCM = 80) {
+        const pairs = [
+            { big: 'XL', small: 'S' },
+            { big: 'L',  small: 'M' }
+        ];
+
         let layoutPatterns = [];
-        let currentX = 5;
         let currentY = 5;
-        let maxHeightInRow = 0;
 
-        sizes.forEach(size => {
-            const front = this.draftLeggingPart(size, false);
-            const back = this.draftLeggingPart(size, true);
-            const itemMaxH = Math.max(front.height, back.height);
-            const combinedWidth = front.width + back.width + 4;
+        pairs.forEach(pair => {
+            const bigFront = this.draftShortpantsPart(pair.big, false);
+            const bigBack = this.draftShortpantsPart(pair.big, true);
+            const smallFront = this.draftShortpantsPart(pair.small, false);
+            const smallBack = this.draftShortpantsPart(pair.small, true);
 
-            // Jika ruang horizontal tidak muat di lebar kain, pindah baris ke bawah
-            if (currentX + combinedWidth > fabricWidthCM - 2) {
-                currentX = 5;
-                currentY += maxHeightInRow + 5;
-                maxHeightInRow = 0;
-            }
+            const rowHeight = Math.max(bigFront.height, bigBack.height) + 5;
 
-            // Susun pola Front dan Back berdampingan
-            layoutPatterns.push({ data: front, offsetX: currentX, offsetY: currentY, rotate: 0 });
-            layoutPatterns.push({ data: back, offsetX: currentX + front.width + 2, offsetY: currentY, rotate: 0 });
+            // Susun Interlock: Ukuran Besar di Sisi Kiri, Ukuran Kecil Diputar di Sisi Kanan Memanfaatkan Ruang Kosong
+            layoutPatterns.push({ data: bigFront, offsetX: 5, offsetY: currentY, rotate: 0 });
+            layoutPatterns.push({ data: bigBack, offsetX: bigFront.width + 5, offsetY: currentY, rotate: 0 });
+            
+            // Sisi kanan kain (Selang-seling/Interlock)
+            const rightX = Math.max(fabricWidthCM / 2, bigFront.width + bigBack.width + 10);
+            layoutPatterns.push({ data: smallFront, offsetX: rightX, offsetY: currentY, rotate: 0 });
+            layoutPatterns.push({ data: smallBack, offsetX: rightX + smallFront.width + 2, offsetY: currentY, rotate: 0 });
 
-            currentX += combinedWidth + 4;
-            if (itemMaxH > maxHeightInRow) maxHeightInRow = itemMaxH;
+            currentY += rowHeight;
         });
 
-        const totalMarkerHeightCM = currentY + maxHeightInRow + 8; // Margin pemotongan
-        const metersPerSpread = (totalMarkerHeightCM / 100).toFixed(2); // Hasil meter per 1 kali gelar
+        const totalLengthCM = currentY + 5;
+        const metersPerSpread = (totalLengthCM / 100).toFixed(2); // Panjang kain per 1 kali gelar
 
         return {
             fabricWidth: Number(fabricWidthCM),
-            patternHeight: totalMarkerHeightCM,
-            estimatedYield: metersPerSpread,
-            totalPcs: 4, // 1 Set Komplit (S, M, L, XL)
+            totalLengthCM: totalLengthCM,
+            estimatedYieldMeters: metersPerSpread,
             patterns: layoutPatterns
         };
     }

@@ -1,7 +1,7 @@
 export class SVGRenderer {
     static renderMarker(markerData) {
         const svgNS = "http://www.w3.org/2000/svg";
-        const scale = 3.5; // Skala render piksel per cm
+        const scale = 3.5; // Skala render (1 cm = 3.5 pixel)
         
         const canvasWidth = markerData.fabricWidth * scale;
         const canvasHeight = markerData.totalLengthCM * scale;
@@ -20,31 +20,30 @@ export class SVGRenderer {
             const cp = p.controlPoint;
 
             const group = document.createElementNS(svgNS, "g");
-            const posX = item.offsetX * scale;
-            const posY = item.offsetY * scale;
-            group.setAttribute("transform", `translate(${posX}, ${posY})`);
+            group.setAttribute("transform", `translate(${item.offsetX * scale}, ${item.offsetY * scale})`);
 
+            // Menggambar alur pola persis sesuai alur diagram gambar referensi
             const dPath = `
-                M ${pts.topLeft.x * scale} ${pts.topLeft.y * scale}
-                L ${pts.topRight.x * scale} ${pts.topRight.y * scale}
-                L ${pts.hipRight.x * scale} ${pts.hipRight.y * scale}
-                L ${pts.hemRight.x * scale} ${pts.hemRight.y * scale}
-                L ${pts.hemLeft.x * scale} ${pts.hemLeft.y * scale}
+                M ${pts.waistIn.x * scale} ${pts.waistIn.y * scale}
+                L ${pts.waistOut.x * scale} ${pts.waistOut.y * scale}
+                L ${pts.hipOut.x * scale} ${pts.hipOut.y * scale}
+                L ${pts.legOut.x * scale} ${pts.legOut.y * scale}
+                L ${pts.legIn.x * scale} ${pts.legIn.y * scale}
                 Q ${cp.x * scale} ${cp.y * scale}, ${pts.crotchTip.x * scale} ${pts.crotchTip.y * scale}
                 Z
             `;
 
             const pathEl = document.createElementNS(svgNS, "path");
             pathEl.setAttribute("d", dPath);
-            pathEl.setAttribute("fill", p.isBack ? "rgba(56, 189, 248, 0.15)" : "rgba(129, 140, 248, 0.15)");
+            pathEl.setAttribute("fill", p.isBack ? "rgba(56, 189, 248, 0.18)" : "rgba(129, 140, 248, 0.18)");
             pathEl.setAttribute("stroke", p.isBack ? "#38bdf8" : "#818cf8");
             pathEl.setAttribute("stroke-width", "1.5");
             group.appendChild(pathEl);
 
-            // Label Nama Pola
+            // Label Informasi Nama Pola
             const text = document.createElementNS(svgNS, "text");
-            text.setAttribute("x", (pts.topLeft.x + 1) * scale);
-            text.setAttribute("y", (pts.topLeft.y + 5) * scale);
+            text.setAttribute("x", (pts.waistIn.x + 1) * scale);
+            text.setAttribute("y", (pts.waistIn.y + 6) * scale);
             text.setAttribute("fill", "#f8fafc");
             text.setAttribute("font-size", "9px");
             text.setAttribute("font-weight", "bold");

@@ -19,6 +19,8 @@ export class ApparelCAD {
 
         return {
             part: "Front Legging", size: size,
+            width: Math.max(wWaist, wHip, legW) + Math.abs(crotchExt),
+            height: l,
             points: {
                 A: { x: 0, y: 1 },
                 B: { x: wWaist, y: 0 },
@@ -50,6 +52,8 @@ export class ApparelCAD {
 
         return {
             part: "Back Legging", size: size,
+            width: Math.max(wWaist, wHip, legW) + Math.abs(crotchExt),
+            height: l + rise,
             points: {
                 A: { x: 0, y: -rise },
                 B: { x: wWaist, y: 0 },
@@ -69,7 +73,6 @@ export class ApparelCAD {
         };
     }
 
-    // Kalkulasi marker dengan lebar kain fleksibel sesuai input aktual rol
     generateMarker(size, fabricWidthCM = 80, isTubular = true) {
         const front = this.draftShortLeggingFront(size);
         const back = this.draftShortLeggingBack(size);
@@ -78,15 +81,17 @@ export class ApparelCAD {
         const patternHeight = spec.length + 5; 
         let requiredLengthMeters = 0;
         let layoutPatterns = [];
-
-        // Validasi batasan fisik: Jika pola melebihi lebar kain aktual, beri peringatan atau sesuaikan tata letak
-        const maxPatternWidth = Math.max(spec.hip/4, spec.legOpening/2) + 5;
-        if (isTubular && fabricWidthCM < maxPatternWidth) {
-            console.warn("Peringatan: Lebar kain tubular terlalu sempit untuk ukuran ini!");
-        }
+        let collisionWarning = false;
 
         if (isTubular) {
             requiredLengthMeters = ((patternHeight * 2) + 4) / 100;
+            
+            // Cek apakah lebar kain cukup untuk menampung bentang pola samping
+            const totalRequiredWidth = Math.max(front.width, back.width) * 1.8;
+            if (fabricWidthCM < totalRequiredWidth) {
+                collisionWarning = true;
+            }
+
             layoutPatterns = [
                 { data: front, offsetX: 5, offsetY: 5, rotate: 0 },
                 { data: back, offsetX: fabricWidthCM / 2, offsetY: patternHeight + 5, rotate: 180 }
@@ -105,6 +110,7 @@ export class ApparelCAD {
             fabricWidth: Number(fabricWidthCM),
             patternHeight: isTubular ? (patternHeight * 2) + 15 : patternHeight + 10,
             estimatedYield: requiredLengthMeters.toFixed(2),
+            warning: collisionWarning,
             patterns: layoutPatterns
         };
     }

@@ -5,29 +5,30 @@ const cad = new ApparelCAD();
 
 function renderApp() {
     const container = document.getElementById('apparel-canvas');
-    const sizeSelect = document.getElementById('sizeSelect');
-    const widthInput = document.getElementById('fabricWidthInput'); // Input fleksibel lebar kain
-    const modeSelect = document.getElementById('fabricModeSelect'); // Pilihan Tubular / Open Width
+    const leftSizeSelect = document.getElementById('leftSizeSelect');   // Pilihan size sisi kiri (misal XL)
+    const rightSizeSelect = document.getElementById('rightSizeSelect'); // Pilihan size sisi kanan (misal S)
+    const widthInput = document.getElementById('fabricWidthInput');     // Lebar kain aktual (misal 80 cm)
     
     if (!container) return;
     
-    const selectedSize = sizeSelect ? sizeSelect.value : 'M';
+    const leftSize = leftSizeSelect ? leftSizeSelect.value : 'XL';
+    const rightSize = rightSizeSelect ? rightSizeSelect.value : 'S';
     const actualWidth = widthInput ? parseFloat(widthInput.value) || 80 : 80;
-    const isTubular = modeSelect ? modeSelect.value === 'tubular' : true;
 
     container.innerHTML = '';
 
-    const marker = cad.generateMarker(selectedSize, actualWidth, isTubular);
+    // Memanggil fungsi interlock marker
+    const marker = cad.generateInterlockMarker(leftSize, rightSize, actualWidth);
 
     const infoCard = document.createElement('div');
     infoCard.style.cssText = "background:#1e293b; color:#fff; padding:15px; border-radius:8px; margin-bottom:15px; grid-column:1/-1;";
     infoCard.innerHTML = `
-        <h4 style="margin:0 0 5px 0;">Kalkulator Marker Fleksibel - Size ${marker.size}</h4>
+        <h4 style="margin:0 0 5px 0;">Nesting Interlock Multi-Size (Anti-Waste)</h4>
         <p style="margin:0; font-size:14px; color:#cbd5e1;">
-            Tipe Kain: <strong>${marker.isTubular ? 'Tubular (Melingkar)' : 'Open Width (Dibelah)'}</strong> | 
-            Lebar Aktual: <strong>${marker.fabricWidth} cm</strong><br>
-            Panjang Celana: <strong>30 cm</strong> | 
-            Estimasi Kebutuhan Kain per Pcs: <strong style="color:#38bdf8;">${marker.estimatedYield} Meter</strong>
+            Layout: <strong>Kiri (${leftSize}) + Kanan (${rightSize})</strong> | 
+            Lebar Rol Kain: <strong>${marker.fabricWidth} cm</strong><br>
+            Sudah Termasuk Kampuh Ban Pinggang (+3.5cm) | 
+            Kebutuhan Kain per Set Kombinasi: <strong style="color:#38bdf8;">${marker.estimatedYield} Meter</strong>
         </p>
     `;
 
@@ -37,9 +38,9 @@ function renderApp() {
     container.appendChild(svgElement);
 }
 
-// Event Listeners untuk interaksi dinamis
-document.getElementById('sizeSelect')?.addEventListener('change', renderApp);
+// Event Listeners
+document.getElementById('leftSizeSelect')?.addEventListener('change', renderApp);
+document.getElementById('rightSizeSelect')?.addEventListener('change', renderApp);
 document.getElementById('fabricWidthInput')?.addEventListener('input', renderApp);
-document.getElementById('fabricModeSelect')?.addEventListener('change', renderApp);
 
 renderApp();

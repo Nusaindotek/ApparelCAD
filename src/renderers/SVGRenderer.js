@@ -1,7 +1,7 @@
 export class SVGRenderer {
     static renderMarker(markerData) {
         const svgNS = "http://www.w3.org/2000/svg";
-        const scale = 3.5; // Skala render (1 cm = 3.5 pixel)
+        const scale = 3.5; // Skala render (1 cm = 3.5 px)
         
         const canvasWidth = markerData.fabricWidth * scale;
         const canvasHeight = markerData.totalLengthCM * scale;
@@ -20,9 +20,16 @@ export class SVGRenderer {
             const cp = p.controlPoint;
 
             const group = document.createElementNS(svgNS, "g");
-            group.setAttribute("transform", `translate(${item.offsetX * scale}, ${item.offsetY * scale})`);
+            const posX = item.offsetX * scale;
+            const posY = item.offsetY * scale;
 
-            // Menggambar alur pola persis sesuai alur diagram gambar referensi
+            // Jika rotasi 180 derajat, sesuaikan origin rotasinya
+            if (item.rotation === 180) {
+                group.setAttribute("transform", `translate(${posX}, ${posY}) rotate(180)`);
+            } else {
+                group.setAttribute("transform", `translate(${posX}, ${posY})`);
+            }
+
             const dPath = `
                 M ${pts.waistIn.x * scale} ${pts.waistIn.y * scale}
                 L ${pts.waistOut.x * scale} ${pts.waistOut.y * scale}
@@ -35,16 +42,16 @@ export class SVGRenderer {
 
             const pathEl = document.createElementNS(svgNS, "path");
             pathEl.setAttribute("d", dPath);
-            pathEl.setAttribute("fill", p.isBack ? "rgba(56, 189, 248, 0.18)" : "rgba(129, 140, 248, 0.18)");
+            pathEl.setAttribute("fill", p.isBack ? "rgba(56, 189, 248, 0.25)" : "rgba(129, 140, 248, 0.25)");
             pathEl.setAttribute("stroke", p.isBack ? "#38bdf8" : "#818cf8");
             pathEl.setAttribute("stroke-width", "1.5");
             group.appendChild(pathEl);
 
-            // Label Informasi Nama Pola
+            // Label Identifikasi Pola
             const text = document.createElementNS(svgNS, "text");
             text.setAttribute("x", (pts.waistIn.x + 1) * scale);
             text.setAttribute("y", (pts.waistIn.y + 6) * scale);
-            text.setAttribute("fill", "#f8fafc");
+            text.setAttribute("fill", "#ffffff");
             text.setAttribute("font-size", "9px");
             text.setAttribute("font-weight", "bold");
             text.textContent = p.part;

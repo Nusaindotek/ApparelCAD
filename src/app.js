@@ -5,31 +5,27 @@ const cad = new ApparelCAD();
 
 function renderApp() {
     const container = document.getElementById('apparel-canvas');
-    const leftSizeSelect = document.getElementById('leftSizeSelect');   // Pilihan size sisi kiri (misal XL)
-    const rightSizeSelect = document.getElementById('rightSizeSelect'); // Pilihan size sisi kanan (misal S)
-    const widthInput = document.getElementById('fabricWidthInput');     // Lebar kain aktual (misal 80 cm)
+    const widthInput = document.getElementById('fabricWidthInput');
     
     if (!container) return;
     
-    const leftSize = leftSizeSelect ? leftSizeSelect.value : 'XL';
-    const rightSize = rightSizeSelect ? rightSizeSelect.value : 'S';
+    // Membaca lebar kain dari input (Default 80 cm)
     const actualWidth = widthInput ? parseFloat(widthInput.value) || 80 : 80;
 
     container.innerHTML = '';
 
-    // Memanggil fungsi interlock marker
-    const marker = cad.generateInterlockMarker(leftSize, rightSize, actualWidth);
+    // Generasi Full Set Komplit (S, M, L, XL)
+    const marker = cad.generateFullSetMarker(actualWidth);
 
     const infoCard = document.createElement('div');
-    infoCard.style.cssText = "background:#1e293b; color:#fff; padding:15px; border-radius:8px; margin-bottom:15px; grid-column:1/-1;";
+    infoCard.style.cssText = "background:#0f172a; border:1px solid #334155; color:#fff; padding:16px; border-radius:8px; margin-bottom:15px;";
     infoCard.innerHTML = `
-        <h4 style="margin:0 0 5px 0;">Nesting Interlock Multi-Size (Anti-Waste)</h4>
-        <p style="margin:0; font-size:14px; color:#cbd5e1;">
-            Layout: <strong>Kiri (${leftSize}) + Kanan (${rightSize})</strong> | 
-            Lebar Rol Kain: <strong>${marker.fabricWidth} cm</strong><br>
-            Sudah Termasuk Kampuh Ban Pinggang (+3.5cm) | 
-            Kebutuhan Kain per Set Kombinasi: <strong style="color:#38bdf8;">${marker.estimatedYield} Meter</strong>
-        </p>
+        <h4 style="margin:0 0 8px 0; color:#38bdf8;">📊 Laporan Marker Full Set Komplit (S, M, L, XL)</h4>
+        <div style="font-size:14px; line-height:1.6; color:#cbd5e1;">
+            • Lebar Kain Aktual: <strong>${marker.fabricWidth} cm</strong><br>
+            • Isi Marker: <strong>1 Set Komplit (4 Pcs: Size S, M, L, XL + Ban Pinggang)</strong><br>
+            • Kebutuhan Kain per 1 Kali Gelar: <strong style="color:#4ade80; font-size:16px;">${marker.estimatedYield} Meter</strong>
+        </div>
     `;
 
     const svgElement = SVGRenderer.renderMarker(marker);
@@ -38,9 +34,7 @@ function renderApp() {
     container.appendChild(svgElement);
 }
 
-// Event Listeners
-document.getElementById('leftSizeSelect')?.addEventListener('change', renderApp);
-document.getElementById('rightSizeSelect')?.addEventListener('change', renderApp);
+// Event listener untuk update real-time saat lebar kain diubah (misal dari 80cm ke 90cm)
 document.getElementById('fabricWidthInput')?.addEventListener('input', renderApp);
 
 renderApp();

@@ -1,6 +1,5 @@
 export class ApparelCAD {
     constructor() {
-        // Ukuran potongan setengah pola Shortpants Rib Knit (cm)
         this.sizeChart = {
             S:  { waist: 16, hip: 20, length: 30, crotchDepth: 20, leg: 18 },
             M:  { waist: 17, hip: 21, length: 30, crotchDepth: 21, leg: 19 },
@@ -9,16 +8,15 @@ export class ApparelCAD {
         };
     }
 
-    // Pembuatan geometri persis sesuai diagram titik 1-17 gambar Anda
     draftShortpantsPart(size, isBack = false) {
         const spec = this.sizeChart[size];
         const wWaist = spec.waist;
         const wHip = spec.hip;
-        const l = spec.length + 3.5; // Total tinggi celana
-        const cd = spec.crotchDepth; // Tinggi pesak (Crotch Depth)
-        const crotchExt = isBack ? 6.5 : 3.5; // Tonjolan pesak (Poin 15/17)
+        const l = spec.length + 3.5;
+        const cd = spec.crotchDepth;
+        const crotchExt = isBack ? 6.5 : 3.5;
         const legW = spec.leg;
-        const rise = isBack ? 3.0 : 0; // Kenaikan ban pinggang belakang (Poin 13)
+        const rise = isBack ? 3.0 : 0;
 
         return {
             part: `${isBack ? 'Belakang' : 'Depan'} (${size})`,
@@ -26,57 +24,76 @@ export class ApparelCAD {
             isBack: isBack,
             width: wHip + crotchExt,
             height: l + rise,
-            // Koordinat Titik Sesuai Diagram
+            crotchExt: crotchExt,
             points: {
-                waistIn:   { x: crotchExt, y: 0 },                  // Poin 13 (Pinggang Dalam)
-                waistOut:  { x: crotchExt + wWaist, y: rise },      // Poin 10/12 (Pinggang Samping)
-                hipOut:    { x: crotchExt + wHip, y: cd },          // Poin 14/16 (Sisi Pinggul)
-                legOut:    { x: crotchExt + legW, y: l + rise },    // Poin 2 (Paha Samping)
-                legIn:     { x: crotchExt, y: l + rise },           // Poin 2 (Paha Dalam)
-                crotchTip: { x: 0, y: cd + rise }                   // Poin 15/17 (Ujung Pesak Melengkung)
+                waistIn:   { x: crotchExt, y: rise },
+                waistOut:  { x: crotchExt + wWaist, y: 0 },
+                hipOut:    { x: crotchExt + wHip, y: cd * 0.7 },
+                legOut:    { x: crotchExt + legW, y: l + rise },
+                legIn:     { x: crotchExt, y: l + rise },
+                crotchTip: { x: 0, y: cd + rise }
             },
-            controlPoint: { x: crotchExt * 0.2, y: (cd + rise) * 0.85 }
+            controlPoint: { x: crotchExt * 0.25, y: (cd + rise) * 0.6 }
         };
     }
 
-    // Shelf-Packing Layout: Menyusun pola otomatis turun baris jika melebihi lebar kain
+    // Algoritma Interlocking Nesting (Saling mengisi lekukan agar efisien & hemat kain)
     generateOptimizedMarker(fabricWidthCM = 80) {
         const sizes = ['XL', 'L', 'M', 'S'];
-        let allParts = [];
+        let layoutPatterns = [];
+
+        let currentY = 3; // Margin atas kain
+        const marginX = 2; // Margin samping kain
+        const gap = 0.5;   // Jarak minimal antar potongan kain (0.5 cm agar rapat)
 
         sizes.forEach(size => {
-            allParts.push(this.draftShortpantsPart(size, false));
-            allParts.push(this.draftShortpantsPart(size, true));
+            const front = this.draftShortpantsPart(size, false);
+            const back  = this.draftShortpantsPart(size, true);
+
+            // Cek apakah 1 pasang (Depan + Belakang Terbalik) muat dalam 1 baris kain
+            // Dengan cara rotasi 180 derajat pada pola belakang, pesak saling menyelip (interlock)
+            const nestedPairWidth = front.width + back.width - Math.min(front.crotchExt, back.crotchExt);
+
+            if (nestedPairWidth + (marginX * 2) <= fabricWidthCM) {
+                // POSISI 1 BARIS (Interlocking rapat)
+                // Pola Depan tegak
+                layoutPatterns.push({
+                    data: front,
+                    offsetX: marginX,
+                    offsetY: currentY,
+                    rotation: 0
+                });
+
+                // Pola Belakang DIPUTAR 180° agar pesak masuk ke ceruk pinggang/pesak depan
+                layoutPatterns.push({
+                    data: back,
+                    offsetX: marginX + front.width + back.width - 2, // Saling selip rapat
+                    offsetY: currentY + back.height,
+                    rotation: 180
+                });
+
+                currentY += Math.max(front.height, back.height) + gap;
+            } else {
+                // POSISI BERTINGKAT (Jika lebar kain tidak cukup)
+                layoutPatterns.push({
+                    data: front,
+                    offsetX: marginX,
+                    offsetY: currentY,
+                    rotation: 0
+                });
+                currentY += front.height + gap;
+
+                layoutPatterns.push({
+                    data: back,
+                    offsetX: marginX,
+                    offsetY: currentY,
+                    rotation: 0
+                });
+                currentY += back.height + gap;
+            }
         });
 
-        let layoutPatterns = [];
-        let currentX = 2;
-        let currentY = 4;
-        let maxHeightInRow = 0;
-        const gap = 3;
-        const margin = 2;
-
-        allParts.forEach(part => {
-            // Jika lebar menyentuh batas kain (80cm/90cm), pindah ke baris bawahnya
-            if (currentX + part.width > fabricWidthCM - margin) {
-                currentX = margin;
-                currentY += maxHeightInRow + gap;
-                maxHeightInRow = 0;
-            }
-
-            layoutPatterns.push({
-                data: part,
-                offsetX: currentX,
-                offsetY: currentY
-            });
-
-            currentX += part.width + gap;
-            if (part.height > maxHeightInRow) {
-                maxHeightInRow = part.height;
-            }
-        });
-
-        const totalLengthCM = currentY + maxHeightInRow + margin;
+        const totalLengthCM = currentY + 2;
         const metersPerSpread = (totalLengthCM / 100).toFixed(2);
 
         return {
